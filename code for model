@@ -1,0 +1,80 @@
+import numpy as np
+import pandas as pd
+
+
+data = {
+    'Age': [25, 34, 45, 23, 35],
+    'Income': [50000, 60000, 70000, 40000, 65000],
+    'Gender': ['Male', 'Female', 'Male', 'Female', 'Male'],
+    'Marital_Status': ['Single', 'Married', 'Married', 'Single', 'Married'],
+    'Coupon': [1, 0, 1, 0, 1]  # Target variable (1=Accepted, 0=Rejected)
+}
+
+
+df = pd.DataFrame(data)
+
+
+X = df.drop('Coupon', axis=1)
+y = df['Coupon']
+
+
+gender_map = {'Male': 0, 'Female': 1}
+marital_status_map = {'Single': 0, 'Married': 1}
+X['Gender'] = X['Gender'].map(gender_map)
+X['Marital_Status'] = X['Marital_Status'].map(marital_status_map)
+
+
+def normalize(column):
+    return (column - column.min()) / (column.max() - column.min())
+
+X['Age'] = normalize(X['Age'])
+X['Income'] = normalize(X['Income'])
+
+
+X = X.values
+y = y.values
+
+
+split_index = int(0.8 * len(X))
+X_train, X_test = X[:split_index], X[split_index:]
+y_train, y_test = y[:split_index], y[split_index:]
+
+
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+def train_logistic_regression(X, y, learning_rate=0.01, epochs=1000):
+    m, n = X.shape
+    weights = np.zeros(n)
+    bias = 0
+
+    for epoch in range(epochs):
+        # Linear model
+        z = np.dot(X, weights) + bias
+        # Sigmoid activation
+        y_pred = sigmoid(z)
+        # Compute gradients
+        dw = (1 / m) * np.dot(X.T, (y_pred - y))
+        db = (1 / m) * np.sum(y_pred - y)
+        # Update weights and bias
+        weights -= learning_rate * dw
+        bias -= learning_rate * db
+
+    return weights, bias
+
+
+weights, bias = train_logistic_regression(X_train, y_train)
+
+
+def predict(X, weights, bias, threshold=0.5):
+    z = np.dot(X, weights) + bias
+    probabilities = sigmoid(z)
+    return (probabilities >= threshold).astype(int)
+
+
+y_pred = predict(X_test, weights, bias)
+accuracy = np.mean(y_pred == y_test)
+
+print(f"Weights: {weights}")
+print(f"Bias: {bias}")
+print(f"Accuracy: {accuracy:.2f}")
